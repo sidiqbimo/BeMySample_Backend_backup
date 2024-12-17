@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  laravel_nginx:
+    image: nginx:latest
+    networks:
+      - laravel_network
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Ensure you have a valid Nginx config file
+    depends_on:
+      - laravel_backend
+      - mysql_db
+
+  laravel_backend:
+    build: .  # Build the image from the Dockerfile in the current directory
+    container_name: laravel_backend
+    networks:
+      - laravel_network
+    ports:
+      - "8000:80"  # Map port 8000 to the container's port 80
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=somekeyhere
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql_db  # Points to the MySQL service
+      - DB_PORT=3306
+      - DB_DATABASE=bms  
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword  # Ensure this matches the MySQL root password
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql_db
+
+  mysql_db:
+    image: mysql:8.0  # Using MySQL 8.0 image
+    container_name: mysql_db
+    networks:
+      - laravel_network
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword  # Set a root password
+      MYSQL_DATABASE: bms  # Set default database to 'bms'
+    ports:
+      - "3306:3306"  # Expose MySQL port
+    volumes:
+      - mysql_data:/var/lib/mysql  # Persist MySQL data
+
+networks:
+  laravel_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
